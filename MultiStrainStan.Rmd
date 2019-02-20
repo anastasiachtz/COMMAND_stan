@@ -1,0 +1,333 @@
+---
+title: "MultiStrainStan"
+author: "Edwin van Leeuwen"
+bibliography: assets/references.bib
+---
+
+```{r setup, include = F}
+# Loading libraries and setting default options
+library(rstan)
+library(tidyverse)
+library(ggpubr)
+
+knitr::opts_chunk$set(cache = T, echo = F, message = F, warning = F)
+
+theme_set(theme_bw())
+
+# Colourblind friendly colours
+cbPalette <- c("#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#999999")
+
+scale_colour_discrete <- function(...)
+  scale_colour_manual(..., values = cbPalette)
+scale_fill_discrete <- function(...)
+  scale_fill_manual(..., values = cbPalette)
+```
+
+In the previous example we were occupied with a single strain of influenza, here we describe a model that models three different strains independently and using historic data we implement the model in Stan.
+The model used is based on a SIR model where each strain acts independently and it is fitted to both weekly influenza-like illness(ILI) and virological data.
+
+Thus, the model is described by the following formulation:
+\begin{align*}\begin{split}
+\frac{\mathrm{d}S_s}{\mathrm{d}t} & = - \beta_s \frac{I_s(t)}{N} S_s(t)\\
+\frac{\mathrm{d}I_s}{\mathrm{d}t} & = \beta_s \frac{I_s(t)}{N} S_s(t) - \gamma I_s(t)\\
+\frac{\mathrm{d}R_s}{\mathrm{d}t} & = \gamma I_s(t)\\
+\end{split}\end{align*}
+with \(S_s(t)\) representing the number of susceptibles at time \(t\)
+(in days) and for strain \(s\) and, similarly, \(I_s(t)\) and \(R_s(t)\)
+representing the number of infected and recovered at a certain time and for
+a certain strain. \(N\) is the total population size
+(\(N=S_s + I_s + R_s\)), \(\beta_s\) is the strain specific rate of
+transmission and \(\gamma\) is the rate of recovery per day.
+
+In order to monitor each strain, we track influenza caused ILI cases (\(\mathrm{ILI}^{+,s}\)) by
+strain (\(s\)) and ILI cases that are not caused by influenza (\(\mathrm{ILI}^{-}\)).
+The total number of ILI cases can then be calculated with:
+\(\mathrm{ILI} = \sum_s \mathrm{ILI}^{+,s} + \mathrm{ ILI}^{-}\).\\
+Therefore,
+\begin{align*}\begin{split}
+\frac{\mathrm{dILI}^{+,s}}{\mathrm{d}t} & =  \theta_s^+\beta_s \frac{I_s(t)}{N} S_s(t)  - \mathrm{ILI}^{+,s}(t) \delta(t \bmod 7) \\
+\frac{\mathrm{dILI}^{-}}{\mathrm{d}t} & =  \theta^-(t)(N - \sum_s I_s(t)) - \mathrm{ILI}^{-}(t) \delta(t \bmod 7)
+\end{split}\end{align*} with \(\theta_s^+\) denoting the rate of becoming
+symptomatic due to flu and \(\theta^-\) the rate of developing ILI
+symptoms when not having flu. \(\delta(t \bmod 7)\) is the Dirac delta function, which causes both ILI states to reset to zero when \(t \bmod 7 = 0\), i.e. every week. 
+
+It is well known that flu-negative ILI rates also increase during the
+winter [@fleming_lessons_2008]. To account for this, \(\theta^-\) was
+assumed to change over time as follows:
+\(\log\theta^-(t) = \hat{\theta} + \phi\left(e^{-\frac{(t-\mu_t)^2}{2 \sigma^2}}-1\right)\),
+where \(\hat{\theta}\) is the maximum value of the (log) value of the
+flu negative ILI rate, \(\phi\) is the amplitude of the peak, \(\mu_t\)
+is the time of the peak and \(\sigma\) governs the width of the peak.
+
+The general approach is to fit the monitored variables (\(ILI^{+,s}\) and
+\(ILI^{-}\)) to the data. First we assume that the number of ILI has the
+following distribution:
+
+\[\mathcal{L}(\mathrm{ ILI}; y^{\mathrm{ ILI}}, \mathrm{ILI}, N, N_c, \epsilon ) = \mathcal{B}(y^{\mathrm{ ILI}}; \mathrm{ ILI} N_c/N, \epsilon)\]
+where, \(y^{\mathrm{ILI}}_i\) is the measured number of ILI cases in the
+catchment population \(N_c\), \(N\) is the total population,
+\(\mathrm{ILI}\) is the total predicted ILI cases in the population (see
+above) and \(\epsilon\) is the rate with which someone with ILI is
+diagnosed, i.e. this is a combination of the probability that the
+infected cases consult the GP and the GP correctly diagnosing the patient.
+
+The virological samples are assumed to follow a multinomial
+distribution:
+\[\mathcal{M}(y^{+,s_0},\dots, y^-; \mathrm{ ILI^{+,s_0}}/\mathrm{ ILI}, \dots \mathrm{ ILI^{-}}/\mathrm{ ILI})\]
+where \(y^{+,H1}, y^{+,H3}, y^{+,B}\) represent the number of positive samples for
+each strain, \(y^-\) is the number of negative samples and
+\(\mathrm{ ILI^{+,s_0}}/\mathrm{ ILI}, \dots, \mathrm{ ILI^{-}}/\mathrm{ ILI}\)
+are respectively the probability of finding positive samples with each
+strain \(s_0, \dots\) and finding negative samples (flu negative ILI).
+
+## Code and results
+
+```{r load_data, echo = T}
+subtypes <- c("H1N1", "H2N3", "B")
+
+df <- read.csv("assets/multistrain.csv")
+
+data_lst <- list(
+  K = 3, 
+  T = nrow(df)*7 + 1,
+  W = nrow(df),
+  N = 55268100, #52751700,
+  Y = df %>% dplyr::select(H1, H3, B, SwabNeg) %>% as.matrix(),
+  YILI = df %>% dplyr::select(ILI, ILIMon) %>% as.matrix()
+)
+```
+
+Stan model code:
+
+```{r stan_model, echo = T}
+model_str <- '
+functions {
+  // Winter peak in influenza negative ILI
+  real niliForcing(int t, real amplitude, real period, real peakTime) {
+    real sigma;
+    sigma = 0.25*period;
+    return amplitude*(exp(-pow(t-peakTime,2)/(2*pow(sigma,2)))-1);
+  }
+
+  real approxbin_lpdf(real k, real n, real p) {
+    return beta_lpdf(p | k+1, fmax(n-k,0)+1);
+  }
+}
+data {
+  int<lower=0> K; // number of strains
+  int<lower=0> T; // number of days
+  int<lower=0> W; // number of weeks
+  int<lower=0> N; // population size
+  int Y[W,K+1];
+  real YILI[W,2];
+}
+parameters {
+  real<lower=0,upper=4> beta[K];
+  real<lower=0,upper=1> gamma;
+  real<lower=0,upper=1> thetap[K];
+  real<lower=-15,upper=0> thetan;
+  
+  vector<lower=-12,upper=-5>[K] I0;
+  vector<lower=0,upper=1>[K] susc;
+  real<lower=0,upper=1> asc;
+  
+  real<lower=40,upper=200> niliPeriod;
+  real<lower=0,upper=3> niliAmplitude;
+  real<lower=70,upper=110> niliPeak;
+}
+transformed parameters {
+  real S[K,T]; 
+  real I[K,T]; 
+  real R[K,T]; 
+  matrix[K,W] PILI;
+  real NILI[W];
+  real ILI[W];
+  matrix[K,T-1] pILI;
+  vector<lower=0>[T-1] nILI;
+  real<lower=0> newI[K,T-1];
+  real<lower=0> newR[K,T-1];
+   
+  vector[K+1] pPILI[W];
+  
+  for (w in 1:W) NILI[w] = 0;
+  
+  // Initial
+  for (k in 1:K) {
+    I[k,1] = exp(I0[k])*susc[k]*N;
+    S[k,1] = susc[k]*N - I[k,1];
+    R[k,1] = (1-susc[k])*N;
+    for (w in 1:W) PILI[k,w] = 0;
+  }
+  
+  // SIR
+  for (t in 2:T) {
+    for (k in 1:K) {
+      newI[k,t-1] = fmin(S[k,t-1], S[k,t-1]*beta[k]*I[k,t-1]/N);
+      
+      S[k,t] = S[k,t-1] - newI[k,t-1];
+      I[k,t] = I[k,t-1] + newI[k,t-1];
+      
+      newR[k,t-1] = fmin(I[k,t], I[k,t]*gamma);
+      I[k,t] = I[k,t] - newR[k,t-1];
+      R[k,t] = R[k,t-1] + newR[k,t-1];
+      
+      
+      pILI[k,t-1] = newI[k,t-1]*thetap[k];
+    }
+    // Uninfected multiplied by the influenza negative ILI rate
+    nILI[t-1] = fmax(0,N-sum(I[,t]))*exp(fmin(thetan + niliForcing(t, niliAmplitude, niliPeriod, niliPeak), 0));
+  }
+  
+  // Per week
+  for (w in 1:W) {
+    for (t in ((w-1)*7+1):(w*7)) {
+      for (k in 1:K) {
+        // Calculate pili and nili
+        PILI[k,w] = PILI[k,w] + pILI[k,t];
+      }
+      NILI[w] = NILI[w] + nILI[t];
+    }
+    ILI[w] = fmax(sum(col(PILI, w)) + NILI[w],1);
+    for (k in 1:K) pPILI[w,k] = PILI[k,w]/ILI[w];
+    pPILI[w,K+1] = 1 - sum(pPILI[w,1:K]);
+  }
+}
+model {
+  real sheddingPeriod;
+  sheddingPeriod = 1/gamma;
+  sheddingPeriod ~ normal(4.8, 0.245); // carrat_time_2008
+  
+  
+  for (k in 1:K) {
+    real reff;
+    reff = beta[k]*susc[k]/gamma;
+    reff ~ normal(1.28, 0.133); // Assume biggerstaff is on Reff
+  }
+  
+  thetap[1] ~ beta(18.21082, 30.61019); // H1N1
+  thetap[2] ~ beta(36.41735, 52.98367); // H3N2
+  thetap[3] ~ beta(4.54816, 50.90341); // B
+  
+  asc ~ beta(35.644, 69.314);
+  
+  for (w in 1:W) {
+    YILI[w,1] ~ approxbin(YILI[w,2]*ILI[w]/N, asc);
+    Y[w] ~ multinomial(pPILI[w]);
+  }
+}
+'
+
+m <- stan_model(model_code = model_str)
+```
+
+Fitting the model (note this will take some time):
+
+```{r fitting, dependson = c("load_data"), echo = F}
+# Having proper initial parameter values for fitting can be important. Here we first 
+# run optimizing to get good starting values, and the sample based on those initial
+# parameters.
+opt <- optimizing(m, data = data_lst)
+init_lst <- purrr::map(1:4, function(i) {
+  list(
+    beta = rnorm(3,opt$par[1:3], 0.01),
+    gamma = opt$par[4],
+    thetap = opt$par[5:7],
+    thetan = opt$par[8],
+    I0 = opt$par[9:11],
+    susc = opt$par[12:14],
+    asc = opt$par[15],
+    niliPeriod = opt$par[16],
+    niliAmplitude = opt$par[17],
+    niliPeak = opt$par[18]
+  )})
+stan_fit <- rstan::sampling(m, data = data_lst, chains = 4, iter = 2000, thin = 1, cores = 4, control = list(adapt_delta = 0.95, max_treedepth = 15), init = init_lst)
+multistrain_fit <- rstan::extract(stan_fit)
+```
+
+```{r plotResults, dependson = c("load_results", "load_data"), fig.cap = "Model fit to the data. Top panel has the fit to the ILI consultation data (blue). Furthermore, the panel highlights the causes of ILI, i.e. by each influenza strain or other non-flu causes. The bottom panel has the fit to the virological confirmation data.", echo = F}
+# Plotting the fits
+pred_viro_df <- multistrain_fit$pPILI %>% as.data.frame.table() %>%
+  rename(np = iterations, week = Var2, Subtype = Var3, value = Freq) %>%
+  dplyr::mutate(
+    np = as.numeric(np),
+    week = as.numeric(week),
+    Subtype = factor(Subtype, labels = c("H1", "H3", "B", "Neg"))
+  ) %>% left_join(data.frame(Total = data_lst$Y %>% rowSums()) %>% mutate(week = row_number())) %>%
+  arrange(np, week, Subtype) %>% group_by(np, week) %>% 
+  mutate(obs = rmultinom(1, Total[1], prob = value), robs = obs/Total) %>% ungroup()
+pred_viro_df <- pred_viro_df %>% group_by(week, Subtype) %>% summarise(
+  q025 = quantile(robs, 0.025),
+  q25 = quantile(robs, 0.25),
+  q50 = quantile(robs, 0.5),
+  q75 = quantile(robs, 0.75),
+  q975 = quantile(robs, 0.975)
+) %>% dplyr::filter(Subtype != "Neg")
+
+viro_df <- data_lst$Y %>% as_data_frame() %>%
+  mutate(Total = H1 + H3 + B + SwabNeg) %>%
+  tidyr::gather(Subtype, value, -Total) %>%
+  mutate(value = value/Total) %>% dplyr::filter(Subtype != "SwabNeg") %>%
+  mutate(Subtype = factor(Subtype, levels = c("H1", "H3", "B"))) %>% group_by(Subtype) %>% mutate(week = row_number()) %>%
+  ungroup()
+
+g1 <- ggplot(data = pred_viro_df) +
+  geom_ribbon(aes(x = week, ymin = q025, ymax = q975, fill = Subtype), alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = q25, ymax = q75, fill = Subtype), alpha = 0.3) +
+  geom_line(aes(x = week, y = q50, colour = Subtype)) +
+  geom_point(data = viro_df, aes(x = week, y = value, colour = Subtype)) +
+  ylab("Positive samples") + xlab("Week") + ylim(0,1)
+
+# ILI data
+ili_df <- data_lst$YILI %>% as_data_frame() %>% dplyr::mutate(value = ILI*100000/ILIMon) %>% mutate(week = row_number()) %>%
+  ungroup()
+asc_df <- multistrain_fit$asc %>% as.data.frame.table() %>%
+rename(np = iterations, asc = Freq) %>%
+  dplyr::mutate(np = as.numeric(np))
+
+# Then plot draws/tot (with uncertainty) by strain and also plot data with pos/tot
+df <- multistrain_fit$PILI %>% as.data.frame.table() %>%
+  rename(np = iterations, week = Var3, Subtype = Var2, value = Freq) %>%
+  dplyr::mutate(
+    np = as.numeric(np),
+    week = as.numeric(week),
+    Subtype = factor(Subtype, labels = c("H1", "H3", "B"))
+  )
+df <- multistrain_fit$NILI %>% as.data.frame.table() %>%
+  rename(np = iterations, week = Var2, value = Freq) %>%
+  dplyr::mutate(
+    np = as.numeric(np),
+    week = as.numeric(week),
+    Subtype = "Non-flu") %>% bind_rows(df) %>%
+  left_join(ili_df %>% dplyr::select(week, ILIMon)) %>%
+  mutate(value = value * ILIMon/data_lst$N) %>%
+  left_join(asc_df)
+
+pred_ili_df <- df %>% mutate(pred = rbinom(n(), round(value), asc)) %>%
+  mutate(value = pred*100000/ILIMon)
+
+pred_ili_df <- pred_ili_df %>% group_by(np, week) %>%
+  summarise(value = sum(value)) %>% mutate(Subtype = "ILI") %>%
+  bind_rows(pred_ili_df) %>% group_by(Subtype, week) %>%
+  summarise(
+    q025 = quantile(value, 0.025),
+    q25 = quantile(value, 0.25),
+    q50 = quantile(value, 0.5),
+    q75 = quantile(value, 0.75),
+    q975 = quantile(value, 0.975)
+  ) %>% ungroup() %>% dplyr::mutate(Subtype = factor(Subtype, levels = c("H1", "H3", "B", "Non-flu", "ILI"))) #%>%
+  #dplyr::filter(Subtype != "Non-flu")
+
+g2 <- ggplot(data = pred_ili_df) +
+  geom_ribbon(aes(x = week, ymin = q025, ymax = q975, fill = Subtype), alpha = 0.3) +
+  geom_ribbon(aes(x = week, ymin = q25, ymax = q75, fill = Subtype), alpha = 0.3) +
+  geom_line(aes(x = week, y = q50, colour = Subtype)) +
+  geom_point(data = ili_df, aes(x = week, y = value)) +
+  ylab("ILI per 100,000") + xlab("Week")
+
+ggarrange(g2, g1, ncol = 1, nrow = 2)
+```
+
+For this example we used the UK influenza data from the 2017/18 season (PHE publication gateway number: 2018093). The 2018/18 season was remarkable in that it had multiple influenza strains circulating. The main strain was a B strain, but a significant amount of virological samples tested positive for the H3 strain as well. Figure \@ref(fig:plotResults) shows the results of model fitting to the ILI GP consultations data and the virological confirmation data. The results show that the influenza strain causing the highest incidence is B, with also some ILI consultations due to infections with the H3 and H1 later in the season (top panel). Flu negative ILI is also an important fraction of the ILI consultations (yellow in the top panel), with a clear increase just before the B outbreak (11-13th week). For the virological confirmation the uncertainty increases after week 17, this is because later in the season less virological samples are taken, resulting in much lower confidence in the actual level of positivity by strain.
+
+## References
+
