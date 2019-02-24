@@ -1,0 +1,631 @@
+"PHEC","GENDER","AGE","YEAR","GONO_CASES","POP"
+"East Midlands","Female","13-14",2012,1,52579
+"East Midlands","Female","13-14",2013,1,51671
+"East Midlands","Female","13-14",2014,5,49954
+"East Midlands","Female","13-14",2015,6,48907
+"East Midlands","Female","13-14",2016,7,48907
+"East Midlands","Female","15-19",2012,196,141597
+"East Midlands","Female","15-19",2013,246,139665
+"East Midlands","Female","15-19",2014,191,138952
+"East Midlands","Female","15-19",2015,167,137819
+"East Midlands","Female","15-19",2016,146,137819
+"East Midlands","Female","20-24",2012,228,155280
+"East Midlands","Female","20-24",2013,256,156068
+"East Midlands","Female","20-24",2014,201,156445
+"East Midlands","Female","20-24",2015,178,156461
+"East Midlands","Female","20-24",2016,225,156461
+"East Midlands","Female","25-34",2012,108,278030
+"East Midlands","Female","25-34",2013,154,282796
+"East Midlands","Female","25-34",2014,163,286642
+"East Midlands","Female","25-34",2015,121,289924
+"East Midlands","Female","25-34",2016,174,289924
+"East Midlands","Female","35-44",2012,35,306283
+"East Midlands","Female","35-44",2013,32,298981
+"East Midlands","Female","35-44",2014,45,293392
+"East Midlands","Female","35-44",2015,37,291485
+"East Midlands","Female","35-44",2016,41,291485
+"East Midlands","Female","45-64",2012,12,606325
+"East Midlands","Female","45-64",2013,23,609471
+"East Midlands","Female","45-64",2014,22,616089
+"East Midlands","Female","45-64",2015,18,621843
+"East Midlands","Female","45-64",2016,28,621843
+"East Midlands","Female","65+",2012,1,442658
+"East Midlands","Female","65+",2013,1,454786
+"East Midlands","Female","65+",2014,0,466188
+"East Midlands","Female","65+",2015,0,474472
+"East Midlands","Female","65+",2016,1,474472
+"East Midlands","Male","13-14",2012,1,55331
+"East Midlands","Male","13-14",2013,1,54410
+"East Midlands","Male","13-14",2014,2,52448
+"East Midlands","Male","13-14",2015,0,50851
+"East Midlands","Male","13-14",2016,1,50851
+"East Midlands","Male","15-19",2012,92,149754
+"East Midlands","Male","15-19",2013,120,147961
+"East Midlands","Male","15-19",2014,107,146913
+"East Midlands","Male","15-19",2015,111,145232
+"East Midlands","Male","15-19",2016,95,145232
+"East Midlands","Male","20-24",2012,276,159446
+"East Midlands","Male","20-24",2013,347,162166
+"East Midlands","Male","20-24",2014,344,165006
+"East Midlands","Male","20-24",2015,326,166395
+"East Midlands","Male","20-24",2016,301,166395
+"East Midlands","Male","25-34",2012,248,274035
+"East Midlands","Male","25-34",2013,285,278488
+"East Midlands","Male","25-34",2014,383,282265
+"East Midlands","Male","25-34",2015,329,286178
+"East Midlands","Male","25-34",2016,293,286178
+"East Midlands","Male","35-44",2012,92,299558
+"East Midlands","Male","35-44",2013,92,292008
+"East Midlands","Male","35-44",2014,115,286822
+"East Midlands","Male","35-44",2015,118,285199
+"East Midlands","Male","35-44",2016,138,285199
+"East Midlands","Male","45-64",2012,67,597434
+"East Midlands","Male","45-64",2013,82,599899
+"East Midlands","Male","45-64",2014,103,605353
+"East Midlands","Male","45-64",2015,113,609744
+"East Midlands","Male","45-64",2016,100,609744
+"East Midlands","Male","65+",2012,6,368480
+"East Midlands","Male","65+",2013,3,381496
+"East Midlands","Male","65+",2014,4,392968
+"East Midlands","Male","65+",2015,8,403085
+"East Midlands","Male","65+",2016,12,403085
+"East of England","Female","13-14",2012,1,71480
+"East of England","Female","13-14",2013,4,70189
+"East of England","Female","13-14",2014,4,69116
+"East of England","Female","13-14",2015,2,67788
+"East of England","Female","13-14",2016,1,67788
+"East of England","Female","15-19",2012,112,180546
+"East of England","Female","15-19",2013,147,179668
+"East of England","Female","15-19",2014,142,177990
+"East of England","Female","15-19",2015,146,176094
+"East of England","Female","15-19",2016,117,176094
+"East of England","Female","20-24",2012,130,179063
+"East of England","Female","20-24",2013,177,177363
+"East of England","Female","20-24",2014,156,178028
+"East of England","Female","20-24",2015,155,176225
+"East of England","Female","20-24",2016,176,176225
+"East of England","Female","25-34",2012,104,391114
+"East of England","Female","25-34",2013,115,396984
+"East of England","Female","25-34",2014,129,401275
+"East of England","Female","25-34",2015,147,404039
+"East of England","Female","25-34",2016,149,404039
+"East of England","Female","35-44",2012,28,424730
+"East of England","Female","35-44",2013,39,418523
+"East of England","Female","35-44",2014,38,416625
+"East of England","Female","35-44",2015,31,418340
+"East of England","Female","35-44",2016,46,418340
+"East of England","Female","45-64",2012,13,807532
+"East of England","Female","45-64",2013,24,813041
+"East of England","Female","45-64",2014,18,821913
+"East of England","Female","45-64",2015,33,830367
+"East of England","Female","45-64",2016,34,830367
+"East of England","Female","65+",2012,1,607959
+"East of England","Female","65+",2013,0,624867
+"East of England","Female","65+",2014,1,640536
+"East of England","Female","65+",2015,2,651701
+"East of England","Female","65+",2016,2,651701
+"East of England","Male","13-14",2012,0,75091
+"East of England","Male","13-14",2013,2,73768
+"East of England","Male","13-14",2014,1,72007
+"East of England","Male","13-14",2015,0,71009
+"East of England","Male","13-14",2016,0,71009
+"East of England","Male","15-19",2012,92,191691
+"East of England","Male","15-19",2013,126,191090
+"East of England","Male","15-19",2014,111,189193
+"East of England","Male","15-19",2015,109,187117
+"East of England","Male","15-19",2016,108,187117
+"East of England","Male","20-24",2012,242,186640
+"East of England","Male","20-24",2013,269,185717
+"East of England","Male","20-24",2014,284,188785
+"East of England","Male","20-24",2015,333,187725
+"East of England","Male","20-24",2016,310,187725
+"East of England","Male","25-34",2012,227,386514
+"East of England","Male","25-34",2013,301,390829
+"East of England","Male","25-34",2014,359,395298
+"East of England","Male","25-34",2015,423,399090
+"East of England","Male","25-34",2016,418,399090
+"East of England","Male","35-44",2012,115,415504
+"East of England","Male","35-44",2013,144,409665
+"East of England","Male","35-44",2014,145,407291
+"East of England","Male","35-44",2015,196,408627
+"East of England","Male","35-44",2016,167,408627
+"East of England","Male","45-64",2012,89,786718
+"East of England","Male","45-64",2013,101,790651
+"East of England","Male","45-64",2014,138,798823
+"East of England","Male","45-64",2015,117,807988
+"East of England","Male","45-64",2016,154,807988
+"East of England","Male","65+",2012,11,499601
+"East of England","Male","65+",2013,5,517512
+"East of England","Male","65+",2014,8,533443
+"East of England","Male","65+",2015,8,545615
+"East of England","Male","65+",2016,5,545615
+"London","Female","13-14",2012,20,89330
+"London","Female","13-14",2013,21,89305
+"London","Female","13-14",2014,25,89179
+"London","Female","13-14",2015,16,88744
+"London","Female","13-14",2016,12,88744
+"London","Female","15-19",2012,741,226609
+"London","Female","15-19",2013,838,224823
+"London","Female","15-19",2014,934,225560
+"London","Female","15-19",2015,745,227381
+"London","Female","15-19",2016,727,227381
+"London","Female","20-24",2012,846,309985
+"London","Female","20-24",2013,882,299107
+"London","Female","20-24",2014,987,292619
+"London","Female","20-24",2015,906,290053
+"London","Female","20-24",2016,887,290053
+"London","Female","25-34",2012,673,830069
+"London","Female","25-34",2013,712,839352
+"London","Female","25-34",2014,833,841257
+"London","Female","25-34",2015,951,842242
+"London","Female","25-34",2016,854,842242
+"London","Female","35-44",2012,178,637173
+"London","Female","35-44",2013,201,643208
+"London","Female","35-44",2014,184,653294
+"London","Female","35-44",2015,219,667293
+"London","Female","35-44",2016,200,667293
+"London","Female","45-64",2012,52,904412
+"London","Female","45-64",2013,72,923450
+"London","Female","45-64",2014,70,943830
+"London","Female","45-64",2015,114,964751
+"London","Female","45-64",2016,90,964751
+"London","Female","65+",2012,2,524407
+"London","Female","65+",2013,3,535444
+"London","Female","65+",2014,1,546560
+"London","Female","65+",2015,2,555588
+"London","Female","65+",2016,0,555588
+"London","Male","13-14",2012,1,93419
+"London","Male","13-14",2013,3,93403
+"London","Male","13-14",2014,1,93699
+"London","Male","13-14",2015,8,93324
+"London","Male","13-14",2016,5,93324
+"London","Male","15-19",2012,446,238056
+"London","Male","15-19",2013,535,237434
+"London","Male","15-19",2014,534,238258
+"London","Male","15-19",2015,520,240789
+"London","Male","15-19",2016,528,240789
+"London","Male","20-24",2012,1822,300060
+"London","Male","20-24",2013,1997,288953
+"London","Male","20-24",2014,2639,284252
+"London","Male","20-24",2015,3027,284353
+"London","Male","20-24",2016,2415,284353
+"London","Male","25-34",2012,4226,829791
+"London","Male","25-34",2013,5492,839613
+"London","Male","25-34",2014,6780,846507
+"London","Male","25-34",2015,8024,851765
+"London","Male","25-34",2016,6315,851765
+"London","Male","35-44",2012,2167,651676
+"London","Male","35-44",2013,2753,663811
+"London","Male","35-44",2014,3457,679103
+"London","Male","35-44",2015,4221,697076
+"London","Male","35-44",2016,3269,697076
+"London","Male","45-64",2012,894,868795
+"London","Male","45-64",2013,1177,888510
+"London","Male","45-64",2014,1547,911098
+"London","Male","45-64",2015,1843,934768
+"London","Male","45-64",2016,1533,934768
+"London","Male","65+",2012,28,413004
+"London","Male","65+",2013,48,424892
+"London","Male","65+",2014,48,436362
+"London","Male","65+",2015,53,445778
+"London","Male","65+",2016,49,445778
+"North East","Female","13-14",2012,8,28697
+"North East","Female","13-14",2013,5,27823
+"North East","Female","13-14",2014,10,26888
+"North East","Female","13-14",2015,8,26024
+"North East","Female","13-14",2016,3,26024
+"North East","Female","15-19",2012,196,79504
+"North East","Female","15-19",2013,237,78445
+"North East","Female","15-19",2014,259,76989
+"North East","Female","15-19",2015,242,75682
+"North East","Female","15-19",2016,247,75682
+"North East","Female","20-24",2012,162,91845
+"North East","Female","20-24",2013,215,91961
+"North East","Female","20-24",2014,231,92226
+"North East","Female","20-24",2015,242,91535
+"North East","Female","20-24",2016,244,91535
+"North East","Female","25-34",2012,77,161966
+"North East","Female","25-34",2013,81,165076
+"North East","Female","25-34",2014,93,165567
+"North East","Female","25-34",2015,119,165869
+"North East","Female","25-34",2016,145,165869
+"North East","Female","35-44",2012,21,166452
+"North East","Female","35-44",2013,11,161824
+"North East","Female","35-44",2014,26,159077
+"North East","Female","35-44",2015,21,157400
+"North East","Female","35-44",2016,32,157400
+"North East","Female","45-64",2012,9,358776
+"North East","Female","45-64",2013,9,358987
+"North East","Female","45-64",2014,4,360023
+"North East","Female","45-64",2015,14,361212
+"North East","Female","45-64",2016,30,361212
+"North East","Female","65+",2012,1,260054
+"North East","Female","65+",2013,0,264949
+"North East","Female","65+",2014,0,270078
+"North East","Female","65+",2015,1,273427
+"North East","Female","65+",2016,1,273427
+"North East","Male","13-14",2012,1,29865
+"North East","Male","13-14",2013,0,29079
+"North East","Male","13-14",2014,1,28269
+"North East","Male","13-14",2015,1,27529
+"North East","Male","13-14",2016,0,27529
+"North East","Male","15-19",2012,111,83882
+"North East","Male","15-19",2013,148,82760
+"North East","Male","15-19",2014,119,81354
+"North East","Male","15-19",2015,121,79797
+"North East","Male","15-19",2016,136,79797
+"North East","Male","20-24",2012,228,95693
+"North East","Male","20-24",2013,278,96364
+"North East","Male","20-24",2014,321,97153
+"North East","Male","20-24",2015,341,96958
+"North East","Male","20-24",2016,347,96958
+"North East","Male","25-34",2012,223,158358
+"North East","Male","25-34",2013,247,161375
+"North East","Male","25-34",2014,237,162453
+"North East","Male","25-34",2015,289,163584
+"North East","Male","25-34",2016,370,163584
+"North East","Male","35-44",2012,43,159441
+"North East","Male","35-44",2013,51,155238
+"North East","Male","35-44",2014,95,152575
+"North East","Male","35-44",2015,90,150970
+"North East","Male","35-44",2016,101,150970
+"North East","Male","45-64",2012,33,345873
+"North East","Male","45-64",2013,32,345204
+"North East","Male","45-64",2014,43,344960
+"North East","Male","45-64",2015,63,345599
+"North East","Male","45-64",2016,66,345599
+"North East","Male","65+",2012,3,208579
+"North East","Male","65+",2013,2,215263
+"North East","Male","65+",2014,6,221414
+"North East","Male","65+",2015,3,225770
+"North East","Male","65+",2016,7,225770
+"North West","Female","13-14",2012,2,81100
+"North West","Female","13-14",2013,5,79439
+"North West","Female","13-14",2014,2,77304
+"North West","Female","13-14",2015,4,75774
+"North West","Female","13-14",2016,3,75774
+"North West","Female","15-19",2012,349,217320
+"North West","Female","15-19",2013,322,212163
+"North West","Female","15-19",2014,249,209808
+"North West","Female","15-19",2015,249,208052
+"North West","Female","15-19",2016,280,208052
+"North West","Female","20-24",2012,427,246943
+"North West","Female","20-24",2013,354,244920
+"North West","Female","20-24",2014,320,241680
+"North West","Female","20-24",2015,327,238540
+"North West","Female","20-24",2016,338,238540
+"North West","Female","25-34",2012,227,456359
+"North West","Female","25-34",2013,246,463506
+"North West","Female","25-34",2014,186,467307
+"North West","Female","25-34",2015,208,471433
+"North West","Female","25-34",2016,269,471433
+"North West","Female","35-44",2012,41,471370
+"North West","Female","35-44",2013,55,459278
+"North West","Female","35-44",2014,53,450403
+"North West","Female","35-44",2015,62,446780
+"North West","Female","35-44",2016,62,446780
+"North West","Female","45-64",2012,25,926050
+"North West","Female","45-64",2013,37,928781
+"North West","Female","45-64",2014,34,936239
+"North West","Female","45-64",2015,28,943752
+"North West","Female","45-64",2016,34,943752
+"North West","Female","65+",2012,1,676320
+"North West","Female","65+",2013,2,689756
+"North West","Female","65+",2014,2,702150
+"North West","Female","65+",2015,3,710595
+"North West","Female","65+",2016,0,710595
+"North West","Male","13-14",2012,0,85236
+"North West","Male","13-14",2013,1,83274
+"North West","Male","13-14",2014,0,80915
+"North West","Male","13-14",2015,1,79382
+"North West","Male","13-14",2016,0,79382
+"North West","Male","15-19",2012,210,227802
+"North West","Male","15-19",2013,179,223442
+"North West","Male","15-19",2014,187,220824
+"North West","Male","15-19",2015,234,218359
+"North West","Male","15-19",2016,180,218359
+"North West","Male","20-24",2012,655,249816
+"North West","Male","20-24",2013,665,248818
+"North West","Male","20-24",2014,693,248062
+"North West","Male","20-24",2015,718,245714
+"North West","Male","20-24",2016,700,245714
+"North West","Male","25-34",2012,777,453923
+"North West","Male","25-34",2013,756,460403
+"North West","Male","25-34",2014,878,465054
+"North West","Male","25-34",2015,1020,471850
+"North West","Male","25-34",2016,1056,471850
+"North West","Male","35-44",2012,293,459865
+"North West","Male","35-44",2013,273,448493
+"North West","Male","35-44",2014,330,439594
+"North West","Male","35-44",2015,384,436129
+"North West","Male","35-44",2016,397,436129
+"North West","Male","45-64",2012,218,909954
+"North West","Male","45-64",2013,182,910128
+"North West","Male","45-64",2014,220,914002
+"North West","Male","45-64",2015,272,919250
+"North West","Male","45-64",2016,260,919250
+"North West","Male","65+",2012,13,545420
+"North West","Male","65+",2013,12,562831
+"North West","Male","65+",2014,19,578602
+"North West","Male","65+",2015,19,590870
+"North West","Male","65+",2016,25,590870
+"South East","Female","13-14",2012,6,98445
+"South East","Female","13-14",2013,2,96905
+"South East","Female","13-14",2014,0,95026
+"South East","Female","13-14",2015,5,93299
+"South East","Female","13-14",2016,1,93299
+"South East","Female","15-19",2012,139,253299
+"South East","Female","15-19",2013,148,252255
+"South East","Female","15-19",2014,158,251267
+"South East","Female","15-19",2015,159,249358
+"South East","Female","15-19",2016,152,249358
+"South East","Female","20-24",2012,169,258456
+"South East","Female","20-24",2013,201,258832
+"South East","Female","20-24",2014,248,260750
+"South East","Female","20-24",2015,246,259905
+"South East","Female","20-24",2016,201,259905
+"South East","Female","25-34",2012,104,520405
+"South East","Female","25-34",2013,129,524011
+"South East","Female","25-34",2014,163,525888
+"South East","Female","25-34",2015,168,526654
+"South East","Female","25-34",2016,188,526654
+"South East","Female","35-44",2012,38,586980
+"South East","Female","35-44",2013,51,578677
+"South East","Female","35-44",2014,52,574870
+"South East","Female","35-44",2015,63,574936
+"South East","Female","35-44",2016,53,574936
+"South East","Female","45-64",2012,36,1112625
+"South East","Female","45-64",2013,21,1120750
+"South East","Female","45-64",2014,35,1132767
+"South East","Female","45-64",2015,33,1145087
+"South East","Female","45-64",2016,51,1145087
+"South East","Female","65+",2012,3,845851
+"South East","Female","65+",2013,1,867705
+"South East","Female","65+",2014,4,888755
+"South East","Female","65+",2015,3,902882
+"South East","Female","65+",2016,0,902882
+"South East","Male","13-14",2012,2,104488
+"South East","Male","13-14",2013,0,102822
+"South East","Male","13-14",2014,0,100506
+"South East","Male","13-14",2015,0,98045
+"South East","Male","13-14",2016,0,98045
+"South East","Male","15-19",2012,131,268047
+"South East","Male","15-19",2013,125,267617
+"South East","Male","15-19",2014,148,266863
+"South East","Male","15-19",2015,177,266496
+"South East","Male","15-19",2016,164,266496
+"South East","Male","20-24",2012,376,269521
+"South East","Male","20-24",2013,399,270666
+"South East","Male","20-24",2014,485,274309
+"South East","Male","20-24",2015,644,274295
+"South East","Male","20-24",2016,478,274295
+"South East","Male","25-34",2012,500,512492
+"South East","Male","25-34",2013,600,516925
+"South East","Male","25-34",2014,786,519320
+"South East","Male","25-34",2015,985,523597
+"South East","Male","25-34",2016,695,523597
+"South East","Male","35-44",2012,284,570517
+"South East","Male","35-44",2013,332,561593
+"South East","Male","35-44",2014,405,556596
+"South East","Male","35-44",2015,490,555081
+"South East","Male","35-44",2016,377,555081
+"South East","Male","45-64",2012,227,1089555
+"South East","Male","45-64",2013,252,1095635
+"South East","Male","45-64",2014,321,1106972
+"South East","Male","45-64",2015,361,1119454
+"South East","Male","45-64",2016,327,1119454
+"South East","Male","65+",2012,12,682364
+"South East","Male","65+",2013,13,706602
+"South East","Male","65+",2014,28,727732
+"South East","Male","65+",2015,26,743289
+"South East","Male","65+",2016,22,743289
+"South West","Female","13-14",2012,0,59459
+"South West","Female","13-14",2013,2,58414
+"South West","Female","13-14",2014,1,56721
+"South West","Female","13-14",2015,1,54831
+"South West","Female","13-14",2016,1,54831
+"South West","Female","15-19",2012,96,157613
+"South West","Female","15-19",2013,94,157442
+"South West","Female","15-19",2014,142,156233
+"South West","Female","15-19",2015,123,155674
+"South West","Female","15-19",2016,88,155674
+"South West","Female","20-24",2012,102,163578
+"South West","Female","20-24",2013,111,163475
+"South West","Female","20-24",2014,165,164235
+"South West","Female","20-24",2015,147,165710
+"South West","Female","20-24",2016,133,165710
+"South West","Female","25-34",2012,60,305489
+"South West","Female","25-34",2013,69,311470
+"South West","Female","25-34",2014,117,315123
+"South West","Female","25-34",2015,105,318357
+"South West","Female","25-34",2016,123,318357
+"South West","Female","35-44",2012,18,341708
+"South West","Female","35-44",2013,9,334093
+"South West","Female","35-44",2014,38,329120
+"South West","Female","35-44",2015,28,327077
+"South West","Female","35-44",2016,19,327077
+"South West","Female","45-64",2012,22,727097
+"South West","Female","45-64",2013,18,729120
+"South West","Female","45-64",2014,23,734869
+"South West","Female","45-64",2015,25,741161
+"South West","Female","45-64",2016,23,741161
+"South West","Female","65+",2012,1,597670
+"South West","Female","65+",2013,0,612114
+"South West","Female","65+",2014,1,626455
+"South West","Female","65+",2015,2,637119
+"South West","Female","65+",2016,0,637119
+"South West","Male","13-14",2012,0,62180
+"South West","Male","13-14",2013,0,61055
+"South West","Male","13-14",2014,0,58977
+"South West","Male","13-14",2015,1,57232
+"South West","Male","13-14",2016,0,57232
+"South West","Male","15-19",2012,60,166207
+"South West","Male","15-19",2013,83,165338
+"South West","Male","15-19",2014,100,163953
+"South West","Male","15-19",2015,119,163332
+"South West","Male","15-19",2016,70,163332
+"South West","Male","20-24",2012,191,175054
+"South West","Male","20-24",2013,240,176494
+"South West","Male","20-24",2014,330,177888
+"South West","Male","20-24",2015,368,177422
+"South West","Male","20-24",2016,258,177422
+"South West","Male","25-34",2012,244,310622
+"South West","Male","25-34",2013,293,316309
+"South West","Male","25-34",2014,358,320219
+"South West","Male","25-34",2015,469,325060
+"South West","Male","25-34",2016,376,325060
+"South West","Male","35-44",2012,133,333778
+"South West","Male","35-44",2013,141,326342
+"South West","Male","35-44",2014,191,321615
+"South West","Male","35-44",2015,225,319469
+"South West","Male","35-44",2016,155,319469
+"South West","Male","45-64",2012,86,699177
+"South West","Male","45-64",2013,136,700715
+"South West","Male","45-64",2014,148,705792
+"South West","Male","45-64",2015,179,711308
+"South West","Male","45-64",2016,163,711308
+"South West","Male","65+",2012,8,487624
+"South West","Male","65+",2013,16,504247
+"South West","Male","65+",2014,16,519345
+"South West","Male","65+",2015,23,531835
+"South West","Male","65+",2016,9,531835
+"West Midlands","Female","13-14",2012,6,67028
+"West Midlands","Female","13-14",2013,8,65548
+"West Midlands","Female","13-14",2014,5,64466
+"West Midlands","Female","13-14",2015,4,63343
+"West Midlands","Female","13-14",2016,7,63343
+"West Midlands","Female","15-19",2012,219,177310
+"West Midlands","Female","15-19",2013,268,175891
+"West Midlands","Female","15-19",2014,377,173508
+"West Midlands","Female","15-19",2015,367,171991
+"West Midlands","Female","15-19",2016,347,171991
+"West Midlands","Female","20-24",2012,287,190276
+"West Midlands","Female","20-24",2013,302,190544
+"West Midlands","Female","20-24",2014,412,191572
+"West Midlands","Female","20-24",2015,422,190888
+"West Midlands","Female","20-24",2016,475,190888
+"West Midlands","Female","25-34",2012,172,359926
+"West Midlands","Female","25-34",2013,214,365873
+"West Midlands","Female","25-34",2014,256,369451
+"West Midlands","Female","25-34",2015,323,372447
+"West Midlands","Female","25-34",2016,402,372447
+"West Midlands","Female","35-44",2012,46,373025
+"West Midlands","Female","35-44",2013,56,364476
+"West Midlands","Female","35-44",2014,65,359004
+"West Midlands","Female","35-44",2015,58,357072
+"West Midlands","Female","35-44",2016,105,357072
+"West Midlands","Female","45-64",2012,30,712953
+"West Midlands","Female","45-64",2013,29,717017
+"West Midlands","Female","45-64",2014,27,722948
+"West Midlands","Female","45-64",2015,17,729550
+"West Midlands","Female","45-64",2016,35,729550
+"West Midlands","Female","65+",2012,0,541165
+"West Midlands","Female","65+",2013,1,551888
+"West Midlands","Female","65+",2014,0,562720
+"West Midlands","Female","65+",2015,0,569993
+"West Midlands","Female","65+",2016,0,569993
+"West Midlands","Male","13-14",2012,0,70551
+"West Midlands","Male","13-14",2013,1,69245
+"West Midlands","Male","13-14",2014,2,67491
+"West Midlands","Male","13-14",2015,4,66002
+"West Midlands","Male","13-14",2016,3,66002
+"West Midlands","Male","15-19",2012,127,186251
+"West Midlands","Male","15-19",2013,141,184713
+"West Midlands","Male","15-19",2014,205,182971
+"West Midlands","Male","15-19",2015,234,181914
+"West Midlands","Male","15-19",2016,171,181914
+"West Midlands","Male","20-24",2012,407,198640
+"West Midlands","Male","20-24",2013,401,200080
+"West Midlands","Male","20-24",2014,550,202204
+"West Midlands","Male","20-24",2015,600,201192
+"West Midlands","Male","20-24",2016,579,201192
+"West Midlands","Male","25-34",2012,452,358583
+"West Midlands","Male","25-34",2013,560,364573
+"West Midlands","Male","25-34",2014,683,369615
+"West Midlands","Male","25-34",2015,774,375577
+"West Midlands","Male","25-34",2016,769,375577
+"West Midlands","Male","35-44",2012,176,370427
+"West Midlands","Male","35-44",2013,207,362368
+"West Midlands","Male","35-44",2014,211,356259
+"West Midlands","Male","35-44",2015,252,353351
+"West Midlands","Male","35-44",2016,305,353351
+"West Midlands","Male","45-64",2012,108,702062
+"West Midlands","Male","45-64",2013,126,705141
+"West Midlands","Male","45-64",2014,132,710370
+"West Midlands","Male","45-64",2015,185,716169
+"West Midlands","Male","45-64",2016,214,716169
+"West Midlands","Male","65+",2012,6,442673
+"West Midlands","Male","65+",2013,5,455005
+"West Midlands","Male","65+",2014,16,466855
+"West Midlands","Male","65+",2015,20,475812
+"West Midlands","Male","65+",2016,22,475812
+"Yorkshire & the Humber","Female","13-14",2012,6,60823
+"Yorkshire & the Humber","Female","13-14",2013,4,59582
+"Yorkshire & the Humber","Female","13-14",2014,6,58074
+"Yorkshire & the Humber","Female","13-14",2015,6,57074
+"Yorkshire & the Humber","Female","13-14",2016,2,57074
+"Yorkshire & the Humber","Female","15-19",2012,184,166888
+"Yorkshire & the Humber","Female","15-19",2013,253,163736
+"Yorkshire & the Humber","Female","15-19",2014,352,161882
+"Yorkshire & the Humber","Female","15-19",2015,286,160724
+"Yorkshire & the Humber","Female","15-19",2016,267,160724
+"Yorkshire & the Humber","Female","20-24",2012,200,192730
+"Yorkshire & the Humber","Female","20-24",2013,270,192106
+"Yorkshire & the Humber","Female","20-24",2014,280,191502
+"Yorkshire & the Humber","Female","20-24",2015,316,190472
+"Yorkshire & the Humber","Female","20-24",2016,271,190472
+"Yorkshire & the Humber","Female","25-34",2012,102,339831
+"Yorkshire & the Humber","Female","25-34",2013,137,345908
+"Yorkshire & the Humber","Female","25-34",2014,209,347571
+"Yorkshire & the Humber","Female","25-34",2015,165,349768
+"Yorkshire & the Humber","Female","25-34",2016,201,349768
+"Yorkshire & the Humber","Female","35-44",2012,27,349767
+"Yorkshire & the Humber","Female","35-44",2013,55,340980
+"Yorkshire & the Humber","Female","35-44",2014,56,334420
+"Yorkshire & the Humber","Female","35-44",2015,38,331207
+"Yorkshire & the Humber","Female","35-44",2016,54,331207
+"Yorkshire & the Humber","Female","45-64",2012,9,682056
+"Yorkshire & the Humber","Female","45-64",2013,20,684550
+"Yorkshire & the Humber","Female","45-64",2014,13,690191
+"Yorkshire & the Humber","Female","45-64",2015,28,696152
+"Yorkshire & the Humber","Female","45-64",2016,36,696152
+"Yorkshire & the Humber","Female","65+",2012,0,507286
+"Yorkshire & the Humber","Female","65+",2013,1,517779
+"Yorkshire & the Humber","Female","65+",2014,0,527588
+"Yorkshire & the Humber","Female","65+",2015,2,534594
+"Yorkshire & the Humber","Female","65+",2016,2,534594
+"Yorkshire & the Humber","Male","13-14",2012,0,63306
+"Yorkshire & the Humber","Male","13-14",2013,1,61877
+"Yorkshire & the Humber","Male","13-14",2014,0,59916
+"Yorkshire & the Humber","Male","13-14",2015,1,59144
+"Yorkshire & the Humber","Male","13-14",2016,1,59144
+"Yorkshire & the Humber","Male","15-19",2012,90,173930
+"Yorkshire & the Humber","Male","15-19",2013,139,170309
+"Yorkshire & the Humber","Male","15-19",2014,200,168436
+"Yorkshire & the Humber","Male","15-19",2015,195,167478
+"Yorkshire & the Humber","Male","15-19",2016,188,167478
+"Yorkshire & the Humber","Male","20-24",2012,264,198525
+"Yorkshire & the Humber","Male","20-24",2013,387,200104
+"Yorkshire & the Humber","Male","20-24",2014,467,199701
+"Yorkshire & the Humber","Male","20-24",2015,469,198414
+"Yorkshire & the Humber","Male","20-24",2016,480,198414
+"Yorkshire & the Humber","Male","25-34",2012,247,339287
+"Yorkshire & the Humber","Male","25-34",2013,386,343866
+"Yorkshire & the Humber","Male","25-34",2014,477,344779
+"Yorkshire & the Humber","Male","25-34",2015,567,348562
+"Yorkshire & the Humber","Male","25-34",2016,524,348562
+"Yorkshire & the Humber","Male","35-44",2012,106,347815
+"Yorkshire & the Humber","Male","35-44",2013,135,339509
+"Yorkshire & the Humber","Male","35-44",2014,182,333348
+"Yorkshire & the Humber","Male","35-44",2015,214,329880
+"Yorkshire & the Humber","Male","35-44",2016,194,329880
+"Yorkshire & the Humber","Male","45-64",2012,75,674298
+"Yorkshire & the Humber","Male","45-64",2013,122,676232
+"Yorkshire & the Humber","Male","45-64",2014,157,679924
+"Yorkshire & the Humber","Male","45-64",2015,134,685248
+"Yorkshire & the Humber","Male","45-64",2016,155,685248
+"Yorkshire & the Humber","Male","65+",2012,4,405393
+"Yorkshire & the Humber","Male","65+",2013,8,418043
+"Yorkshire & the Humber","Male","65+",2014,10,429957
+"Yorkshire & the Humber","Male","65+",2015,12,439147
+"Yorkshire & the Humber","Male","65+",2016,18,439147
