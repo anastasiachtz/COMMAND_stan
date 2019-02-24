@@ -1,0 +1,705 @@
+---
+title: "Single strain deterministic and stochastic models"
+author: "Anastasia Chatzilena"
+---
+
+```{r setup, include=FALSE}
+library(deSolve)
+library(dplyr)
+library(rstan)
+library(outbreaks)
+library(bayesplot)
+
+rstan_options(auto_write = TRUE)           
+options(mc.cores = parallel::detectCores())
+
+knitr::opts_chunk$set(cache = TRUE, echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+In this example, we examine an outbreak of influenza A (H1N1) in 1978 at a British boarding school. We use daily data on the number of students in bed, spanning over a time interval of 14 days. There were 763 male students which were mostly full boarders and 512 of them became ill. The outbreak lasted from the 22nd of January to the 4th of February and it is reported that one infected boy started the epidemic and then it spread rapidly in the relatively closed community of the boarding school. The data are freely available in the R package outbreaks, maintained as part of the R Epidemics Consortium (RECON; \url{http://www.repidemicsconsortium.org}).
+
+Load data of influenza:
+
+```{r load_flu_data, echo = TRUE}
+onset <- influenza_england_1978_school$date    
+cases <- influenza_england_1978_school$in_bed  #Number of students in bed
+N = length(onset) # Number of days observed throughout the outbreak
+pop = 763         # Population 
+sample_time=1:N
+
+# Modify data into a form suitable for Stan
+flu_data = list(n_obs = N,
+                n_theta = 2,
+                n_difeq = 3,
+                n_pop = pop,
+                y = cases,
+                t0 = 0,
+                ts = sample_time)
+
+# Specify parameters to monitor
+
+parameters = c("y_hat", "y_init", "theta",  "R_0")  #deterministic models (Model 1, Model 2)
+
+parameters_stoch = c("y_hat", "y_init", "theta", "kappa", "lambda", "phi", "s_sq", "sigma", "R_0")  #stochastic model (Model 3)
+```
+
+In the context of a deterministic SIR, in order to estimate the transmission and the recovery rate, we use two different specifications and we fit the models using Stan's NUTS algorithm and the mean-field ADVI variant.
+
+## Model 1 - Poisson model
+
+Stan model statement:
+
+```{r stan_model1, echo=TRUE}
+mod1_stat <- '
+functions {
+  real[] SIR(real t,  // time
+  real[] y,           // system state {susceptible,infected,recovered}
+  real[] theta,       // parameters
+  real[] x_r,
+  int[] x_i) {
+  
+  real dy_dt[3];
+  
+  dy_dt[1] = - theta[1] * y[1] * y[2];
+  dy_dt[2] = theta[1] * y[1] * y[2] - theta[2] * y[2];
+  dy_dt[3] = theta[2] * y[2];
+  
+  return dy_dt;
+  }
+  
+  }
+  data {
+  int<lower = 1> n_obs;       // number of days observed
+  int<lower = 1> n_theta;     // number of model parameters
+  int<lower = 1> n_difeq;     // number of differential equations
+  int<lower = 1> n_pop;       // population 
+  int y[n_obs];           // data, total number of infected individuals each day
+  real t0;                // initial time point (zero)
+  real ts[n_obs];         // time points observed
+  }
+  
+  transformed data {
+  real x_r[0];
+  int x_i[0];
+  }
+  
+  parameters {
+  real<lower = 0> theta[n_theta]; // model parameters {beta,gamma}
+  real<lower = 0, upper = 1> S0;  // initial fraction of susceptible individuals
+  }
+  
+  transformed parameters{
+  real y_hat[n_obs, n_difeq]; // solution from the ODE solver
+  real y_init[n_difeq];     // initial conditions for both fractions of S and I
+  
+  y_init[1] = S0;
+  y_init[2] = 1 - S0;
+  y_init[3] = 0;
+  y_hat = integrate_ode_rk45(SIR, y_init, t0, ts, theta, x_r, x_i);
+  
+  }
+  
+  model {
+  real lambda[n_obs];      //poisson parameter
+  
+  //priors
+  theta[1] ~ lognormal(0,1);
+  theta[2] ~ gamma(0.004,0.02);  //Assume mean infectious period = 5 days 
+  S0 ~ beta(0.5, 0.5);
+  
+  //likelihood
+  for (i in 1:n_obs){
+  lambda[i] = y_hat[i,2]*n_pop;
+  }
+  y ~ poisson(lambda);
+  }
+  
+  generated quantities {
+  real R_0;      // Basic reproduction number
+  R_0 = theta[1]/theta[2];
+  }
+'
+
+m1 <- stan_model(model_code = mod1_stat)
+```
+
+Fit and sample from the posterior using Hamiltonian Monte Carlo-NUTS:
+
+```{r NUTS_fit1, dependson=c(load_flu_data) , echo=FALSE}
+n_chains=5
+n_warmups=500
+n_iter=100500
+n_thin=50
+set.seed(1234)
+# Set initial values:
+ini_1 = function(){
+  list(theta=c(runif(1,0,5), runif(1,0.2,0.4)), 
+       S0=runif(1,(pop-3)/pop,(pop-1)/pop))  
+}
+
+time.start_nuts1 <- Sys.time()
+nuts_fit_1 = sampling(m1, data = flu_data, pars = parameters, init = ini_1, chains = n_chains, warmup = n_warmups, iter = n_iter, thin=n_thin, seed=13219)
+time.end_nuts1 <- Sys.time()
+duration_nuts1<- time.end_nuts1 - time.start_nuts1
+
+nuts_fit_1_summary <- summary(nuts_fit_1, pars = c("lp__", "theta[1]", "theta[2]", "y_init[1]", "R_0"))$summary
+print(nuts_fit_1_summary,scientific=FALSE,digits=2)
+posts_1 <-  rstan::extract(nuts_fit_1)
+```
+
+Check HMC diagnostics:
+
+```{r diagnostics1, echo=FALSE}
+mod1_diagnostics <-rstan::get_sampler_params(nuts_fit_1)
+
+# Check for divergent transitions
+rstan::check_divergences(nuts_fit_1)
+
+posterior_1 <- as.array(nuts_fit_1)
+color_scheme_set("viridis")
+# Markov chain traceplots
+mcmc_trace(posterior_1, pars="lp__")
+mcmc_trace(posterior_1, pars=c("theta[1]", "theta[2]", "y_init[1]"))
+mcmc_trace(posterior_1, pars="R_0")
+
+# Univariate and bivariate marginal posterior distributions
+pairs(nuts_fit_1, pars = c("theta[1]", "theta[2]", "y_init[1]"), labels = c("beta", "gamma", "s(0)"), 
+      cex.labels=1.5, font.labels=9, condition = "accept_stat__")  
+
+# Kernel density estimates of each Markov chain separately, overlaid
+mcmc_dens_overlay(posterior_1, pars=c("theta[1]", "theta[2]", "y_init[1]"))
+
+#Central posterior uncertainty intervals
+mcmc_intervals(posterior_1,pars = c("theta[1]", "theta[2]", "y_init[1]"))
+```
+
+Plot model fit, median and 95% credible interval:
+
+```{r plot_nuts_fit1, echo=FALSE}
+# Model fitted values across the observed time period
+fit_I_1 <- posts_1$y_hat[,,2]    # Fitted fraction of infected 
+fit_SIR_1 <- fit_I_1*pop         # Fitted number of infected
+median_I_1 = apply(fit_SIR_1, 2, median)
+low_I_1 = apply(fit_SIR_1, 2, quantile, probs=c(0.025))
+high_I_1 = apply(fit_SIR_1, 2, quantile, probs=c(0.975))
+df_sample_N = data.frame(cases, sample_time)
+df_fit_I_1 = data.frame(median_I_1, low_I_1, high_I_1, sample_time)
+
+save(df_sample_N,file="data.Rda")
+save(df_fit_I_1,file="df_I_det_Poiss.Rda")
+
+ggplot(df_sample_N, aes(x=sample_time, y=cases)) +
+  geom_ribbon(aes(x=sample_time, ymin = low_I_1, ymax = high_I_1), fill = "orange", alpha = 0.6) +
+  geom_line(data = df_fit_I_1, aes(x=sample_time, y=median_I_1, color = "Median"), size = 1.3) +
+  geom_point(shape = 19, size = 3, (aes(color="Data"))) +
+  scale_colour_manual(name='', values=c('Data'='black', 'Median'='darkorange3'))+
+  guides(colour = guide_legend(override.aes = list(shape=c(16,NA),  linetype=c(0,1))))+
+  labs(x = "Time (days)", y = "Number of Infected students") + 
+  scale_x_continuous(limits=c(0, 14), breaks=c(0,7,14)) +
+  scale_y_continuous(limits=c(0,400), breaks=c(0,100,200,300,400)) +
+  theme_bw()+ theme(text = element_text(size=20))
+```
+
+Approximate the posterior using ADVI(mean-field):
+
+```{r ADVI_1, dependson=c(load_flu_data), echo=FALSE}
+set.seed(1234)
+# Set initial values:
+ini_vb_1 = function(){
+  list(params=c(runif(1,1.85,1.92), runif(1,0.47,0.49)), 
+       S0=runif(1,(pop-2)/pop,(pop-1)/pop))}
+
+time.start_vb_1 <- Sys.time()
+vb_fit_1=vb(m1, data = flu_data, pars = parameters, init = ini_vb_1, iter = 10000, tol_rel_obj = 0.001, seed=16735679)
+time.end_vb_1 <- Sys.time()
+vb_duration_1 <- time.end_vb_1 - time.start_vb_1
+
+vb_fit_1_summary <- summary(vb_fit_1, pars = c("lp__", "theta[1]", "theta[2]", "y_init[1]", "R_0"))$summary
+print(vb_fit_1_summary,scientific=FALSE,digits=2)
+posts_vb_1 <-  rstan::extract(vb_fit_1)
+```
+
+Plot model fit, median and 95% credible interval:
+
+```{r plot_advi_1, echo=FALSE}
+# Model fitted values across the observed time period
+fit_I_vb_1 <- posts_vb_1$y_hat[,,2]
+fit_SIR_vb_1 <- fit_I_vb_1*pop
+median_I_vb_1 = apply(fit_SIR_vb_1, 2, median)
+low_I_vb_1 = apply(fit_SIR_vb_1, 2, quantile, probs=c(0.025))
+high_I_vb_1 = apply(fit_SIR_vb_1, 2, quantile, probs=c(0.975))
+df_fit_I_vb_1 = data.frame(median_I_vb_1, low_I_vb_1, high_I_vb_1, sample_time)
+save(df_fit_I_vb_1,file="df_I_det_Poiss_vb.Rda")
+
+ggplot(df_sample_N, aes(x=sample_time, y=cases)) +
+  geom_ribbon(aes(x=sample_time, ymin = low_I_vb_1, ymax = high_I_vb_1), fill = "light green", alpha = 0.6) +
+  geom_line(data = df_fit_I_vb_1, aes(x=sample_time, y=median_I_vb_1, color = "Median"), size = 1.3) +
+  geom_point(shape = 19, size = 3, (aes(color="Data"))) +
+  scale_colour_manual(name='', values=c('Data'='black', 'Median'='dark green'))+
+  guides(colour = guide_legend(override.aes = list(shape=c(16,NA), linetype=c(0,1))))+
+  labs(x = "Time (days)", y = "Number of Infected students") + 
+  scale_x_continuous(limits=c(0, 14), breaks=c(0,7,14)) +
+  scale_y_continuous(limits=c(0,400), breaks=c(0,100,200,300,400)) +
+  theme_bw()+theme(text = element_text(size=20))
+```
+
+## Model 2 - Binomial model
+
+Stan model statement:
+
+```{r stan_model2, echo=TRUE}
+mod2_stat <- '
+functions {
+  real[] SIR(real t,  // time
+  real[] y,           // system state {susceptible,infected,recovered}
+  real[] theta,       // parameters
+  real[] x_r,
+  int[] x_i) {
+  
+  real dy_dt[3];
+  
+  dy_dt[1] = - theta[1] * y[1] * y[2];
+  dy_dt[2] = theta[1] * y[1] * y[2] - theta[2] * y[2];
+  dy_dt[3] = theta[2] * y[2];
+  
+  return dy_dt;
+  }
+  
+  }
+  data {
+  int<lower = 1> n_obs;       // number of days observed
+  int<lower = 1> n_theta;     // number of model parameters
+  int<lower = 1> n_difeq;     // number of differential equations
+  int<lower = 1> n_pop;       // population 
+  int y[n_obs];           // data, total number of infected individuals each day
+  real t0;                // initial time point (zero)
+  real ts[n_obs];         // time points observed
+  }
+  
+  transformed data {
+  real x_r[0];
+  int x_i[0];
+  }
+  
+  parameters {
+  real<lower = 0> theta[n_theta]; // model parameters {beta,gamma}
+  real<lower = 0, upper = 1> S0;  // initial fraction of susceptible individuals
+  }
+  
+  transformed parameters{
+  real y_hat[n_obs, n_difeq]; // solution from the ODE solver
+  real y_init[n_difeq];     // initial conditions for both fractions of S and I
+  
+  y_init[1] = S0;
+  y_init[2] = 1 - S0;
+  y_init[3] = 0;
+  y_hat = integrate_ode_rk45(SIR, y_init, t0, ts, theta, x_r, x_i);
+  
+  }
+  
+  model {
+
+  //priors
+  theta[1] ~ lognormal(0,1);
+  theta[2] ~ gamma(0.004,0.02);  //Assume mean infectious period = 5 days 
+  S0 ~ beta(0.5, 0.5);
+  
+  //likelihood
+  y ~ binomial(n_pop, y_hat[, 2]);
+  }
+  
+  generated quantities {
+  real R_0;      // Basic reproduction number
+  R_0 = theta[1]/theta[2];
+  }
+'
+
+m2 <- stan_model(model_code = mod2_stat)
+```
+
+Fit and sample from the posterior using Hamiltonian Monte Carlo-NUTS:
+
+```{r NUTS_fit2, dependson=c(load_flu_data) , echo=FALSE}
+n_chains=5
+n_warmups=500
+n_iter=100500
+n_thin=50
+set.seed(1234)
+# Set initial values:
+ini_2 = function(){
+  list(theta=c(runif(1,0,5), runif(1,0.2,0.4)), 
+       S0=runif(1,(pop-3)/pop,(pop-1)/pop))  
+}
+
+time.start_nuts2 <- Sys.time()
+nuts_fit_2 = sampling(m2, data = flu_data, pars = parameters, init = ini_2, chains = n_chains, warmup = n_warmups, iter = n_iter, thin=n_thin, seed=259158591)
+time.end_nuts2 <- Sys.time()
+duration_nuts2 <- time.end_nuts2 - time.start_nuts2
+
+nuts_fit_2_summary <- summary(nuts_fit_2, pars = c("lp__", "theta[1]", "theta[2]", "y_init[1]", "R_0"))$summary
+print(nuts_fit_2_summary,scientific=FALSE,digits=2)
+posts_2 <-  rstan::extract(nuts_fit_2)
+```
+
+Check HMC diagnostics:
+
+```{r diagnostics2, echo=FALSE}
+mod2_diagnostics <-rstan::get_sampler_params(nuts_fit_2)
+
+# Check for divergent transitions
+rstan::check_divergences(nuts_fit_2)
+
+posterior_2 <- as.array(nuts_fit_2)
+color_scheme_set("viridis")
+# Markov chain traceplots
+mcmc_trace(posterior_2, pars="lp__")
+mcmc_trace(posterior_2, pars=c("theta[1]", "theta[2]", "y_init[1]"))
+mcmc_trace(posterior_2, pars="R_0")
+
+# Univariate and bivariate marginal posterior distributions
+pairs(nuts_fit_2, pars = c("theta[1]", "theta[2]", "y_init[1]"), labels = c("beta", "gamma", "s(0)"), 
+      cex.labels=1.5, font.labels=9, condition = "accept_stat__")  
+
+# Kernel density estimates of each Markov chain separately, overlaid
+mcmc_dens_overlay(posterior_2, pars=c("theta[1]", "theta[2]", "y_init[1]"))
+
+#Central posterior uncertainty intervals
+mcmc_intervals(posterior_2,pars = c("theta[1]", "theta[2]", "y_init[1]"))
+```
+
+Plot model fit, median and 95% credible interval:
+
+```{r plot_nuts_fit2, echo=FALSE}
+# Model fitted values across the observed time period
+fit_I_2 <- posts_2$y_hat[,,2]    # Fitted fraction of infected 
+fit_SIR_2 <- fit_I_2*pop         # Fitted number of infected
+median_I_2 = apply(fit_SIR_2, 2, median)
+low_I_2 = apply(fit_SIR_2, 2, quantile, probs=c(0.025))
+high_I_2 = apply(fit_SIR_2, 2, quantile, probs=c(0.975))
+df_fit_I_2 = data.frame(median_I_2, low_I_2, high_I_2, sample_time)
+
+ggplot(df_sample_N, aes(x=sample_time, y=cases)) +
+  geom_ribbon(aes(x=sample_time, ymin = low_I_2, ymax = high_I_2), fill = "orange", alpha = 0.6) +
+  geom_line(data = df_fit_I_2, aes(x=sample_time, y=median_I_2, color = "Median"), size = 1.3) +
+  geom_point(shape = 19, size = 3, (aes(color="Data"))) +
+  scale_colour_manual(name='', values=c('Data'='black', 'Median'='darkorange3'))+
+  guides(colour = guide_legend(override.aes = list(shape=c(16,NA),  linetype=c(0,1))))+
+  labs(x = "Time (days)", y = "Number of Infected students") + 
+  scale_x_continuous(limits=c(0, 14), breaks=c(0,7,14)) +
+  scale_y_continuous(limits=c(0,400), breaks=c(0,100,200,300,400)) +
+  theme_bw()+ theme(text = element_text(size=20))
+```
+
+Approximate the posterior using ADVI(mean-field):
+
+```{r ADVI_2, dependson=c(load_flu_data), echo=FALSE}
+set.seed(1234)
+# Set initial values:
+ini_vb_2 = function(){
+  list(params=c(runif(1,1.85,1.92), runif(1,0.47,0.49)),
+       S0=runif(1,(pop-2)/pop,(pop-1)/pop))}
+
+time.start_vb_2 <- Sys.time()
+vb_fit_2=vb(m2, data = flu_data, pars = parameters, init = ini_vb_2, iter = 10000, tol_rel_obj = 0.001, seed=121671623)
+time.end_vb_2 <- Sys.time()
+vb_duration_2 <- time.end_vb_2 - time.start_vb_2
+
+vb_fit_2_summary <- summary(vb_fit_2, pars = c("lp__", "theta[1]", "theta[2]", "y_init[1]", "R_0"))$summary
+print(vb_fit_2_summary,scientific=FALSE,digits=2)
+posts_vb_2 <-  rstan::extract(vb_fit_2)
+```
+
+Plot model fit, median and 95% credible interval:
+
+```{r plot_advi2, echo=FALSE}
+# Model fitted values across the observed time period
+fit_I_vb_2 <- posts_vb_2$y_hat[,,2]
+fit_SIR_vb_2 <- fit_I_vb_2*pop
+median_I_vb_2 = apply(fit_SIR_vb_2, 2, median)
+low_I_vb_2 = apply(fit_SIR_vb_2, 2, quantile, probs=c(0.025))
+high_I_vb_2 = apply(fit_SIR_vb_2, 2, quantile, probs=c(0.975))
+df_fit_I_vb_2 = data.frame(median_I_vb_2, low_I_vb_2, high_I_vb_2, sample_time)
+
+ggplot(df_sample_N, aes(x=sample_time, y=cases)) +
+  geom_ribbon(aes(x=sample_time, ymin = low_I_vb_2, ymax = high_I_vb_2), fill = "light green", alpha = 0.6) +
+  geom_line(data = df_fit_I_vb_2, aes(x=sample_time, y=median_I_vb_2, color = "Median"), size = 1.3) +
+  geom_point(shape = 19, size = 3, (aes(color="Data"))) +
+  scale_colour_manual(name='', values=c('Data'='black', 'Median'='dark green'))+
+  guides(colour = guide_legend(override.aes = list(shape=c(16,NA), linetype=c(0,1))))+
+  labs(x = "Time (days)", y = "Number of Infected students") + 
+  scale_x_continuous(limits=c(0, 14), breaks=c(0,7,14)) +
+  scale_y_continuous(limits=c(0,400), breaks=c(0,100,200,300,400)) +
+  theme_bw()+theme(text = element_text(size=20))
+```
+
+Estimates of the Poisson model (Model 1) are very close to the estimates of the Binomial model (Model 2), irrespectively of the inference method used. In both models, ADVI results in narrower credible intervals for $\beta$ and $R_0$ compared to NUTS, suggesting that ADVI may be underestimating the posterior uncertainty, as has been observed in the past.
+Both deterministic models have a reasonable fit to the data but underestimate the overall uncertainty thus resulting in overly precise estimates which fail to capture the data appropriately.
+
+## Model 3 - Poisson stochastic model
+
+Even though the deterministic approach gives us an insight into the dynamics of the disease, adding stochasticity may allow for a more accurate estimation of the parameters related to the spread of the disease, as the stochastic component can absorb the noise generated by a possible mis-specification of the model.
+We extend our Poisson model to include stochastic variation by incorporating an Ornstein-Uhlenbeck (OU) process.
+
+Stan model statement:
+
+```{r stan_model3, echo=TRUE}
+mod3_stat <- '
+functions {
+
+  real[] SIR(real t,  // time
+  real[] y,           // system state {susceptible,infected,recovered}
+  real[] theta,       // parameters 
+  real[] x_r,
+  int[] x_i) {
+  
+  real dy_dt[3];
+  
+  dy_dt[1] = - theta[1] * y[1] * y[2];
+  dy_dt[2] = theta[1] * y[1] * y[2] - theta[2] * y[2];
+  dy_dt[3] = theta[2] * y[2];
+  
+  return dy_dt;
+  }
+  
+  }
+  
+  data {
+  int<lower = 1> n_obs;       // number of days observed
+  int<lower = 1> n_theta;     // number of model parameters
+  int<lower = 1> n_difeq;     // number of differential equations
+  int<lower = 1> n_pop;       // population 
+  int y[n_obs];           // data, total number of infected individuals each day
+  real t0;                // initial time point (zero)
+  real ts[n_obs];         // time points that were observed
+  }
+  
+  transformed data {
+  real x_r[0];
+  int x_i[0];
+  }
+  
+  parameters {
+  real<lower = 0> theta[n_theta]; // model parameters {beta,gamma}
+  real<lower = 0, upper = 1> S0;  // initial fraction of susceptible individuals
+  real kappa[n_obs];              // logarithm of poisson parameter
+  real<lower=0> phi;              // speed of reversion
+  real<lower=0> s_sq;             // square of instantaneous diffusion term
+  }
+  
+  transformed parameters{
+  real y_hat[n_obs, n_difeq]; // solution from the ODE solver
+  real y_init[n_difeq];       // initial conditions for both fractions of S and I
+  real sigma;                  // variance of OU process
+  real lambda[n_obs];          // poisson parameter
+  
+  y_init[1] = S0;
+  y_init[2] = 1 - S0;
+  y_init[3] = 0;
+  
+  y_hat = integrate_ode_rk45(SIR, y_init, t0, ts, theta, x_r, x_i);
+  
+  for (i in 1:n_obs){
+  lambda[i]=exp(kappa[i]);
+  }
+  
+  sigma=(1-exp(-2*phi))*(s_sq/(2*phi));
+  }
+  
+  model {
+  
+  real mu[n_obs];    // logarithm of solution of deterministic model
+  
+  //priors
+  theta[1] ~ lognormal(0,1); 
+  theta[2] ~ gamma(0.004,0.02); //Assume mean infectious period = 5 days
+  S0 ~ beta(0.5, 0.5);
+  phi ~ normal(0,10);
+  s_sq ~ inv_gamma(0.1,0.1);
+  
+  //likelihood
+  for (i in 1:n_obs){
+  mu[i] = log(y_hat[i,2]*n_pop);
+  }
+  
+  kappa[1]~normal(mu[1],sigma); // kappa=log(lambda) is an Ornstein-Uhlenbeck process
+  for (i in 2:n_obs){
+  kappa[i]~normal(mu[i]+(kappa[i-1]-mu[i])*exp(-phi),sigma);   
+  }
+  
+  y ~ poisson(lambda);
+  }
+  
+  generated quantities {
+  real R_0;      // Basic reproduction number
+  R_0 = theta[1]/theta[2];
+  }
+'
+
+m3 <- stan_model(model_code = mod3_stat)
+```
+
+Fit and sample from the posterior using Hamiltonian Monte Carlo-NUTS:
+
+```{r NUTS_fit3, dependson=c(load_flu_data) , echo=FALSE}
+n_chains=5
+n_warmups=500
+n_iter=100500
+n_thin=50
+set.seed(123)
+# Set initial values
+ini_3 = function(){
+  list(params=c(runif(1,1,4), runif(1,0.2,0.6)), S0=runif(1,(pop-3)/pop,(pop-1)/pop), 
+       phi=runif(1,0.5,6.5), s_sq=runif(1,0.5,4.5))
+}
+
+# Test / debug the model
+test = sampling(m3, data = flu_data, pars = parameters_stoch, init = ini_3, chains = 1, iter = 10)
+
+time.start_nuts3 <- Sys.time()
+nuts_fit_3 = sampling(m3, data = flu_data, pars = parameters_stoch, init = ini_3, chains = n_chains, warmup = n_warmups, iter = n_iter, thin=n_thin, seed=13219)
+time.end_nuts3 <- Sys.time()
+duration_nuts3 <- time.end_nuts3 - time.start_nuts3
+
+nuts_fit_3_summary <- summary(nuts_fit_3, pars = c("lp__", "theta[1]", "theta[2]", "y_init[1]", "R_0", "phi", "s_sq"))$summary
+print(nuts_fit_3_summary,scientific=FALSE,digits=2)
+print(duration_nuts3)
+posts_3 <-  rstan::extract(nuts_fit_3)
+```
+
+Check HMC diagnostics:
+
+```{r diagnostics3, echo=FALSE}
+mod3_diagnostics <-rstan::get_sampler_params(nuts_fit_3)
+
+# Check for divergent transitions
+rstan::check_divergences(nuts_fit_3)
+
+posterior_3 <- as.array(nuts_fit_3)
+# Markov chain traceplots
+mcmc_trace(posterior_3, pars="lp__")
+mcmc_trace(posterior_3, pars=c("theta[1]", "theta[2]", "y_init[1]"))
+mcmc_trace(posterior_3, pars=c("phi","s_sq"))
+mcmc_trace(posterior_3, pars="R_0")
+
+pairs(nuts_fit_3, pars = c("theta[1]", "theta[2]", "y_init[1]", "phi","s_sq"), labels = c("beta", "gamma", "s(0)", "phi", "s_sq"),
+      cex.labels=1.5, font.labels=9, condition = "accept_stat__")
+
+mcmc_dens_overlay(posterior_3, pars=c("theta[1]", "theta[2]", "y_init[1]", "phi","s_sq"))
+mcmc_intervals(posterior_3,pars = c("theta[1]", "theta[2]", "y_init[1]", "phi","s_sq")) 
+```
+
+Plot deterministic and stochastic model fit, medians and 95% credible intervals:
+
+```{r plot_nuts_fit3, echo=FALSE}
+# Model fitted values
+fit_lambda <- posts_3$lambda
+post_kappa <-posts_3$kappa
+fit_kappa <- unlist(post_kappa)
+fit_I_3 <- posts_3$y_hat[,,2]
+fit_SIR_3 <- fit_I_3*pop
+post_mu <- log(fit_I_3*pop)
+fit_mu <- unlist(post_mu)
+fit_phi <- posts_3$phi
+fit_sigma <- posts_3$sigma
+mean_lambda <- matrix(nrow=10000, ncol=14)   # mean of Poisson parameter
+mean_lambda[,1]=exp(fit_mu[,1]+(fit_sigma/2));
+for (i in 2:N){
+  mean_lambda[,i]=exp(fit_mu[,i]+(fit_kappa[,i-1]-fit_mu[,i])*exp(-fit_phi) +(fit_sigma/2));
+}
+median_lmean = apply(mean_lambda, 2, median)
+low_lmean = apply(mean_lambda, 2, quantile, probs=c(0.025))
+high_lmean = apply(mean_lambda, 2, quantile, probs=c(0.975))
+df_fit_lmean = data.frame(median_lmean, low_lmean, high_lmean, sample_time)
+
+load("df_I_det_Poiss.Rda") # fitted values from the deterministic model
+median_I<-df_fit_I_1$median_I_1
+low_I<-df_fit_I_1$low_I_1
+high_I<-df_fit_I_1$high_I_1
+df_fit_I = data.frame(median_I, low_I, high_I, sample_time)
+
+# Plot of the data along with the fitted mean of Poisson parameter and the fitted number of infected from the deterministic model 
+ggplot(df_sample_N, aes(x=sample_time, y=cases)) +
+  geom_ribbon(aes(x=sample_time, ymin = low_lmean, ymax = high_lmean), fill = "lightblue", alpha = 0.6) +
+  geom_ribbon(aes(x=sample_time, ymin = low_I, ymax = high_I), fill = "orange", alpha = 0.6) +
+  geom_line(data = df_fit_lmean, aes(x=sample_time, y=median_lmean, color="Fitted stochastic model"),size = 1.3) +
+  geom_line(data = df_fit_I, aes(x=sample_time, y=median_I, color = "Fitted deterministic model"), size = 1.3) +
+  geom_point(shape = 19, size = 3, (aes(color="Data"))) +
+  scale_colour_manual(name='', values=c('Data'='black', 'Fitted stochastic model'='lightblue4', 'Fitted deterministic model'='darkorange3'))+
+  guides(colour = guide_legend(override.aes = list(shape=c(16,NA,NA), linetype=c(0,1,1))))+
+  labs(x = "Time (days)", y = "Number of Infected students") + 
+  scale_x_continuous(limits=c(0, 14), breaks=c(0,7,14)) +
+  scale_y_continuous(limits=c(0,400), breaks=c(0,100,200,300,400)) +
+  theme_bw()+theme(text = element_text(size=20))
+```
+
+Approximate the posterior using ADVI(mean-field):
+
+```{r ADVI_3, dependson=c(load_flu_data), echo=FALSE}
+set.seed(123)
+# Set initial values:
+ini_vb_3 = function(){
+  list(params=c(runif(1,1.9,2.1), runif(1,0.5,0.56)),
+       S0=runif(1,(pop-3)/pop,(pop-1)/pop),
+       phi=runif(1,0.9,6.1), s_sq=runif(1,0.59,3.4))
+}
+
+time.start_vb_3 <- Sys.time()
+vb_fit_3=vb(m3, data = flu_data, pars = parameters_stoch, init = ini_vb_3, iter = 10000, tol_rel_obj = 0.001, seed=24176217)
+time.end_vb_3 <- Sys.time()
+vb_duration_3 <- time.end_vb_3 - time.start_vb_3
+
+vb_fit_3_summary <- summary(vb_fit_3, pars = c("theta[1]", "theta[2]", "y_init[1]", "R_0", "phi", "s_sq"))$summary
+print(vb_fit_3_summary,scientific=TRUE,digits=2)
+print(vb_duration_3)
+posts_vb_3 <-  rstan::extract(vb_fit_3)
+```
+
+Plot deterministic and stochastic model fit, medians and 95% credible intervals:
+
+```{r plot_advi3, echo=FALSE}
+# Model fitted values across the observed time period
+fit_lambda_vb <- posts_vb_3$lambda
+post_kappa_vb <- posts_vb_3$kappa
+fit_kappa_vb <- unlist(post_kappa_vb)
+fit_I_vb_3 <- posts_vb_3$y_hat[,,2]
+fit_SIR_vb_3 <- fit_I_vb_3*pop
+post_mu_vb <- log(fit_I_vb_3*pop)
+fit_mu_vb <- unlist(post_mu_vb)
+fit_phi_vb <- posts_vb_3$phi
+fit_sigma_vb <- posts_vb_3$sigma
+mean_lambda_vb <- matrix(nrow=10000, ncol=14)
+mean_lambda_vb[,1]=exp(fit_mu_vb[,1]+(fit_sigma_vb/2));  # mean of Poisson parameter
+for (i in 2:N){
+  mean_lambda_vb[,i]=exp(fit_mu_vb[,i]+(fit_kappa_vb[,i-1]- fit_mu_vb[,i])*exp(-fit_phi_vb)+(fit_sigma_vb/2));
+}
+median_lmean_vb = apply(mean_lambda_vb, 2, median)
+low_lmean_vb = apply(mean_lambda_vb, 2, quantile, probs=c(0.025))
+high_lmean_vb = apply(mean_lambda_vb, 2, quantile, probs=c(0.975))
+df_fit_lmean_vb = data.frame(median_lmean_vb, low_lmean_vb, high_lmean_vb, sample_time)
+load("df_I_det_Poiss_vb.Rda")  # fitted values from the deterministic model
+
+median_I_vb<-df_fit_I_vb_1$median_I_vb_1
+low_I_vb<-df_fit_I_vb_1$low_I_vb_1
+high_I_vb<-df_fit_I_vb_1$high_I_vb_1
+df_fit_I_vb <-data_frame(median_I_vb, low_I_vb, high_I_vb)
+
+# Plot of the data along with the fitted mean of Poisson parameter and the fitted number of infected from the deterministic model
+ggplot(df_sample_N, aes(x=sample_time, y=cases)) +
+  geom_ribbon(aes(x=sample_time, ymin = low_lmean_vb, ymax = high_lmean_vb), fill = "lightblue", alpha = 0.6) +
+  geom_ribbon(aes(x=sample_time, ymin = low_I_vb, ymax = high_I_vb), fill = "orange", alpha = 0.6) +
+  geom_line(data = df_fit_lmean_vb, aes(x=sample_time, y=median_lmean_vb, color="Fitted stochastic model"),size = 1.3) +
+  geom_line(data = df_fit_I_vb, aes(x=sample_time, y=median_I_vb, color = "Fitted deterministic model"), size = 1.3) +
+  geom_point(shape = 19, size = 3, (aes(color="Data"))) +
+  scale_colour_manual(name='', values=c('Data'='black', 'Fitted stochastic model'='lightblue4', 'Fitted deterministic model'='darkorange3'))+
+  guides(colour = guide_legend(override.aes = list(shape=c(16,NA,NA),linetype=c(0,1,1))))+
+  labs(x = "Time (days)", y = "Number of Infected students") + 
+  scale_x_continuous(limits=c(0, 14), breaks=c(0,7,14)) +
+  scale_y_continuous(limits=c(0,400), breaks=c(0,100,200,300,400)) +
+  theme_bw() + theme(text = element_text(size=20))
+```
+
+The resulting 95$\%$ credible intervals from ADVI have shorter length compared to NUTS.
+Also, adding stochasticity improves the fit to the data.
+
+
+Summing up, the results of both the deterministic and the stochastic setting bring us to the preliminary conclusion that if we are interested in real-time inference both methods are feasible and efficient. In terms of computational time ADVI is extremely efficient.
