@@ -1,0 +1,249 @@
+---
+title: "Hierarchical Poisson mixed model"
+author: "Oliver Ratmann, Anastasia Chatzilena"
+---
+
+We consider surveillance data for gonorrhoea in England between 2012 and 2016 and build increasingly realistic models reflecting reality. Our aim is to characterize gonorrhoea diagnosis rates by age, gender and geographically and for that purpose we employ a Poisson regression model.
+For this example, to make things even easier, we will be using the rethinking R package.
+
+```{r setup, include=FALSE}
+library(data.table)
+library(ggplot2)
+library(rethinking)
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Sum the annual gonorrhea cases by age, gender and PHE center, and calculate the corresponding person-years:
+
+```{r load_data_years, echo = FALSE }
+	df <- as.data.table(read.csv("PHE_Gonorrhea_Surveillance.csv", stringsAsFactors=FALSE))
+	df[, LOG_POP:= log(POP)]
+	df[, MALE:= as.integer(GENDER=='Male')]
+
+	#	overall Gono incidence for male and female across England
+	dg2	<- df[, list(GONO_CASES=sum(GONO_CASES), PERSON_YEARS=sum(POP)), by=c('GENDER','PHEC','AGE')]	
+```
+
+Plot the data:
+
+```{r plot echo = FALSE}	
+	ggplot(dg2) +
+			geom_line(aes(x=AGE, colour=PHEC, group=PHEC, y=PERSON_YEARS)) +
+			theme_bw() +
+			theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position='bottom') +	
+			facet_grid(GENDER~PHEC, scales='free') +
+			labs(x='\nage group', y='person-years\n', colour='PHE\nregion') +
+			guides(colour=guide_legend(ncol=4))
+```
+
+Fit a Poisson regression model:
+	
+```{r fit1 dependson = c("load_data_years"), echo = FALSE}	
+  dg2[, LOG_PERSON_YEARS:= log(PERSON_YEARS)]
+	dg2[, MALE:= as.integer(GENDER=='Male')]
+	mg2.1	<- map2stan(
+			alist(
+					GONO_CASES ~ dpois(kappa),
+					log(kappa) <- alpha + LOG_PERSON_YEARS + bmale*MALE,
+					alpha <- dnorm(0,100),
+					bmale <- dnorm(0,10)					
+			),
+			data=as.data.frame(dg2), 
+			start=list(alpha=-8, bmale=0),
+			iter=5e3, warmup=5e2)	
+
+	plot(mg2.1)
+```
+	
+Extract gender specific diagnosis rates:
+	
+```{r  diag_rates1, echo = FALSE}
+  post	<- extract.samples(mg2.1)
+	#	G incidence per 100,000 women
+	round( quantile( exp( post$alpha )*1e5, prob=c(0.5,0.025,0.975)), d=3)
+	#	Incidence per 100,000 men
+	round( quantile( exp( post$alpha+post$bmale )*1e5, prob=c(0.5,0.025,0.975)), d=3)
+	#	Incidence risk ratio among males vs females
+	quantile( exp( post$bmale ), prob=c(0.5,0.025,0.975))	
+```	
+	
+Plot crude diagnosis rate estimates for each region against the overall median posterior estimate and 95% CI: 
+
+```{r plot_diag_rates_postmedian, echo = FALSE}	
+	probs	<- c(0.5, 0.025, 0.975)
+	post	<- extract.samples(mg2.1)
+	overall.inc.rate.male.log 	<- quantile( exp( post$alpha+post$bmale ), p=probs) * 1e5
+	overall.inc.rate.female.log <- quantile( exp( post$alpha ), p=probs) * 1e5
+	post			<- data.table(	MALE=rep(c(1,0), each=3),
+			STAT=c('MEDIAN','CL','CU'),
+			LINK=rep(c('log','log'), each=3),
+			VALUE= c(overall.inc.rate.male.log,overall.inc.rate.female.log))
+	post	<- dcast.data.table(post, MALE+LINK~STAT, value.var='VALUE')	
+	
+	ggplot(dg2) +
+			geom_vline(data=post, aes(xintercept=MEDIAN), lty=1, colour='red') +
+			geom_vline(data=post, aes(xintercept=CL), lty=2, colour='red') +
+			geom_vline(data=post, aes(xintercept=CU), lty=2, colour='red') +
+			geom_point(aes(y=PHEC, x= GONO_CASES/PERSON_YEARS*1e5)) +
+			theme_bw() +			
+			labs(x='\ncrude Gonorrhea incidence\nper 100,000', y='PHE region') +
+			facet_grid(~factor(MALE, levels=c(0,1), labels=c('female','male')), scales='free')
+```
+Conclusion: There is substantial heterogeneity across PHE regions
+The model does not fit well at all as it is, which can be further shown with posterior predictive checks
+
+Add sex-homogeneous random effects across PHE centres:
+
+```{r fit2 dependson = c("load_data_years"), echo = FALSE}	
+	dg2[, PHEC2:= as.integer(factor(PHEC))]
+	mg2.2	<- map2stan(
+			alist(
+					GONO_CASES ~ dpois(kappa),
+					log(kappa) <- alpha + alpha_phec[PHEC2] + LOG_PERSON_YEARS + bmale*MALE,					
+					alpha <- dnorm(0,100),
+					alpha_phec[PHEC2] <- dnorm(0,pop_alpha_sig),
+					bmale <- dnorm(0,10),
+					pop_alpha_sig <- dcauchy(0,2)
+			),
+			data=as.data.frame(dg2), 
+			start=list(alpha=-8, alpha_phec=rep(0,9), bmale=0, pop_alpha_sig=1),
+			iter=1e4, warmup=5e2)
+	
+	#	Conclusion: 1e4 iterations are fine, resulting in eff n of > 500. this is enough for 95% credibility intervals
+	
+	plot(mg2.2)
+	plot(precis(mg2.2, depth=2, prob=0.95))
+```	
+
+Extract incidence rates by gender and PHEC:
+
+```{r ir_gender_PHEC, echo = FALSE}
+  post	<- extract.samples(mg2.2)
+	#	Incidence per 100,000 women for each PHEC
+	tmp	<- matrix(data=post$alpha, ncol=9, nrow=length(post$alpha)) + post$alpha_phec	
+	mg2.2.inc.rate.female.log			<- apply( exp( tmp )*1e5, 2, quantile, prob=c(0.5,0.025,0.975))
+	rownames(mg2.2.inc.rate.female.log)	<- c('MEDIAN','CL','CU')	
+	mg2.2.inc.rate.female.log			<- as.data.table(t(mg2.2.inc.rate.female.log))
+	mg2.2.inc.rate.female.log[,PHEC2:= 1:9]		
+	mg2.2.inc.rate.female.log[,MALE:= 0]
+	
+	#	Incidence per 100,000 men for each PHEC
+	tmp	<- matrix(data=post$alpha, ncol=9, nrow=length(post$alpha)) + post$alpha_phec + matrix(data=post$bmale, ncol=9, nrow=length(post$bmale))	
+	mg2.2.inc.rate.male.log				<- apply( exp( tmp )*1e5, 2, quantile, prob=c(0.5,0.025,0.975))
+	rownames(mg2.2.inc.rate.male.log)	<- c('MEDIAN','CL','CU')	
+	mg2.2.inc.rate.male.log				<- as.data.table(t(mg2.2.inc.rate.male.log))
+	mg2.2.inc.rate.male.log[,PHEC2:= 1:9]		
+	mg2.2.inc.rate.male.log[,MALE:= 1]
+	
+	#	put this together
+	mg2.2.inc.rate.log	<- rbind(mg2.2.inc.rate.female.log, mg2.2.inc.rate.male.log)
+	mg2.2.inc.rate.log	<- merge(mg2.2.inc.rate.log, unique(subset(dg2, select=c(PHEC, PHEC2))), by='PHEC2')	
+	
+	#Plot region-specific incidence estimates with two panels for males and females against the crude estimates
+	ggplot(dg2) +
+			geom_point(aes(y=PHEC, x= GONO_CASES/PERSON_YEARS*1e5), colour='grey60') +
+			geom_point(aes(y=PHEC, x=MEDIAN), data=mg2.2.inc.rate.log) +
+			geom_errorbarh(aes(y=PHEC, xmin=CL, xmax=CU, x=MEDIAN), data=mg2.2.inc.rate.log, height=0.3) +
+			theme_bw() +			
+			labs(x='\ncrude Gonorrhea incidence\nper 100,000', y='PHE region') +
+			facet_grid(~factor(MALE, levels=c(0,1), labels=c('female','male')), scales='free')
+```	
+Conclusion: the region-specific posterior medians are now better, but the model fails to capture full heterogeneity
+
+
+Visualize trends in diagnosis rates by age:
+
+```{r plot_diag_rates_age, echo = FALSE}
+	ggplot(dg2, aes(x=AGE, colour=PHEC, group=PHEC, y=GONO_CASES/PERSON_YEARS*1e5)) +
+			geom_line() +
+			theme_bw() +
+			facet_grid(~GENDER, scales='free') +
+			labs(x='\nage group', y='crude incidence rate\nper 100,000', colour='PHE\nregion')
+```
+Conclusions:
+Substantial heterogeneity by age category, which can be modelled through additional random effects.
+Diagnoses peak at younger age among women when compared to men, suggesting that separate age-specific random effects should be added for males and females.
+Diagnoses among males from London are too high, this suggests adding an independent effect for London males.
+
+
+Fit mixed Poisson model:
+
+```{r fit3 dependson = c("load_data_years"), echo = FALSE}
+  dg2[, PHEC2:= as.integer(factor(PHEC))]
+	dg2[, AGE2:= as.integer(factor(AGE))]
+	dg2[, LONDON:= as.integer(PHEC=='London')]
+	mg2.4	<- map2stan(
+			alist(
+					GONO_CASES ~ dpois(kappa),
+					log(kappa) <- alpha + alpha_phec[PHEC2] + age_male[AGE2]*MALE + age_female[AGE2]*(1-MALE) + 
+							LOG_PERSON_YEARS + bmale*MALE + bmale_london*MALE*LONDON, 
+					alpha <- dnorm(0,100),
+					alpha_phec[PHEC2] <- dnorm(0,pop_alpha_sig),
+					age_male[AGE2] <- dnorm(0,pop_age_male_sig),
+					age_female[AGE2] <- dnorm(0,pop_age_female_sig),
+					c(bmale,bmale_london) <- dnorm(0,10),
+					c(pop_alpha_sig, pop_age_male_sig, pop_age_female_sig) <- dexp(3)
+			),
+			data=as.data.frame(dg2), 
+			start=list(	alpha=-8, alpha_phec=rep(0,9), age_male=rep(0,7), age_female=rep(0,7), 
+					bmale=0, bmale_london=0, pop_alpha_sig=1, pop_age_male_sig=1, pop_age_female_sig=1),
+			iter=3e4, warmup=2e3)
+	plot(mg2.4)
+	plot(precis(mg2.4, prob=0.95, depth=2))	
+```	
+	
+Perform posterior predictive check:
+
+```{r predictive_check_mix ,echo = FALSE}
+	sims 	<- sim(mg2.4, n=1e3)
+	y.median<- apply(sims, 2, median)
+	y.PI 	<- apply(sims, 2, PI, prob=0.95)
+	y.PI	<- rbind(y.median, y.PI)
+	rownames(y.PI)	<-  c('predicted_cases_median','predicted_cases_l95','predicted_cases_u95')
+	y.PI	<- as.data.table(t(y.PI))
+	y.PI	<- cbind(dg2, y.PI)
+	ggplot(y.PI, aes(x=AGE, ymin=predicted_cases_l95, ymax=predicted_cases_u95)) +
+			geom_point(aes(y=predicted_cases_median)) + 
+			geom_point(aes(y=GONO_CASES), colour='red') +
+			geom_errorbar() +
+			theme_bw() +			
+			theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position='bottom') +
+			#scale_y_continuous(expand=c(0,0)) +
+			labs(x='\ncenter', y='predicted versus actual cases\n') +
+			#coord_cartesian(ylim=c(0,3500)) +
+			facet_wrap(GENDER~PHEC, scales='free', ncol=9)
+```
+	
+Extract and plot the estimated incidence rates through a dummy function:
+
+```{r plot_inc_dummy, echo = FALSE}
+	post	<- extract.samples(mg2.4)
+	dummy<- function(phec_idx, age_idx, male)
+	{
+		london	<- as.integer(phec_idx==3)
+		tmp		<- with(post, alpha + alpha_phec[,phec_idx] + age_female[, age_idx]*(1-male) + age_male[, age_idx]*male + bmale*male + bmale_london*male*london)
+		quantile(exp(tmp)*1e5, prob=c(0.5,0.025,0.975))						
+	}
+	tmp		<- dg2[, 	{
+				z	<- dummy(PHEC2,AGE2,MALE)
+				list(STAT=c('MEDIAN','CL','CU'), VALUE=z)
+			}, by=c('PHEC','PHEC2','AGE','AGE2','GENDER','MALE')]
+	tmp		<- dcast.data.table(tmp, PHEC+PHEC2+AGE+AGE2+GENDER+MALE~STAT, value.var='VALUE')			
+	ggplot(dg2) +
+			geom_line(aes(x=AGE, colour=PHEC, group=PHEC, y=GONO_CASES/PERSON_YEARS*1e5)) +
+			geom_point(data=tmp, aes(x=AGE, y=MEDIAN)) +
+			geom_errorbar(data=tmp, aes(x=AGE, ymin=CL, ymax=CU), width=0.3) +
+			theme_bw() +
+			theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position='bottom') +	
+			facet_grid(GENDER~PHEC, scales='free') +
+			labs(x='\nage group', y='crude incidence rate\nper 100,000', colour='PHE\nregion') +
+			guides(colour=guide_legend(ncol=4))
+	
+	ggplot(tmp, aes(x=AGE, y=MEDIAN, colour=GENDER)) + 
+			geom_point() +
+			theme_bw() +
+			theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position='bottom') +
+			labs(x='\nage group', y='median posterior diagnosis rate\nper 100,000', colour='gender') +
+			facet_wrap(~PHEC, ncol=3)
+```
