@@ -3,6 +3,8 @@ This repository contains code for the paper:
 Anastasia Chatzilena, Edwin van Leeuwen, Oliver Ratmann, Marc Baguelin, Nikolaos Demiris. 
 Contemporary statistical inference for infectious disease models using Stan.
 
+All the examples used in this study can be reproduced by executing the corresponding .Rmd file.
+The assets directory contains data used in the examples.
 
 Abstract
 
