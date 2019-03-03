@@ -14,6 +14,7 @@ library(rethinking)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+The raw data used in this example can be found in https://www.gov.uk/government/statistics/sexually-transmitted-infections-stis-annual-data-tables.
 Sum the annual gonorrhea cases by age, gender and PHE center, and calculate the corresponding person-years:
 
 ```{r load_data_years, echo = FALSE }
